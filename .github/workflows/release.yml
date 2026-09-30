@@ -73,7 +73,7 @@ jobs:
         run: |
           node <<'NODE'
           const { writeFileSync } = require("node:fs");
-          const identity = (process.env.APPLE_SIGNING_IDENTITY || "").trim();
+          let identity = (process.env.APPLE_SIGNING_IDENTITY || "").trim();
           if (!identity) {
             console.warn("APPLE_SIGNING_IDENTITY not set: falling back to ad-hoc '-' signing (fork mode)");
             identity = "-";
