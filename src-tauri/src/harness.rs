@@ -1583,11 +1583,7 @@ fn resolve_harness_binary_override(provider: &str, binary_path: &str) -> Result<
         "fx" => &["fx"],
         "hermes" => &["hermes"],
         "antigravity" => &["agy_acp_server.par"],
-        // "hermes" also accepted: the Windows SSH-bridge shim shipped as
-        // hermes.exe before the rename; its --version banner contains
-        // "opencrabs" either way, so both old installs and the renamed
-        // opencrabs-bridge.exe pass this gate.
-        "opencrabs" => &["opencrabs", "opencrabs-bridge", "hermes"],
+        "opencrabs" => &["opencrabs", "opencrabs-bridge"],
         _ => {
             return Err(format!(
                 "Unsupported configured harness provider: {provider}"
