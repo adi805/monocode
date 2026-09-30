@@ -493,7 +493,7 @@ export const HARNESS_TITLE: Record<HarnessId, string> = {
   pi: "Pi",
   omp: "omp",
   fx: "fx",
-  hermes: "Hermes Agent",
+  hermes: "OpenCrabs (VPS)",
   antigravity: "Antigravity",
 };
 

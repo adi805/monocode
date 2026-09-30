@@ -46,7 +46,7 @@ const CLI: Record<HarnessId, { name: string; install?: string }> = {
   omp: { name: "omp CLI", install: "curl -fsSL https://omp.sh/install | sh" },
   fx: { name: "fx CLI", install: "curl -fsSL https://fx.sh/setup.sh | bash" },
   hermes: {
-    name: "Hermes Agent CLI",
+    name: "OpenCrabs ACP bridge",
     install:
       "Install from hermes-agent.nousresearch.com, then run hermes model",
   },

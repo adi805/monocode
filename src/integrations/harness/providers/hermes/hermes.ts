@@ -1,4 +1,7 @@
-import { nativeModelId } from "../../../../features/sessions/model/models";
+import {
+  hasLiveCatalog,
+  nativeModelId,
+} from "../../../../features/sessions/model/models";
 import type { RuntimeMode } from "../../../../features/sessions/model/session";
 import { AcpClient, type AcpHandlers } from "../../core/acp";
 import { AcpSubagents } from "../../core/acpSubagents";
@@ -176,6 +179,11 @@ export function bindHermesSession(
   const sessionId = acpSessionId.trim();
   if (!threadId || !sessionId || !cwd.trim()) return;
   resumeByThread.set(threadId, { acpSessionId: sessionId, cwd });
+  // A live session proves the bridge works: make sure the model catalog is
+  // populated too (no-op when already loaded; probe is inflight-guarded).
+  if (!hasLiveCatalog("hermes")) {
+    void import("./hermesCatalog").then((m) => m.refreshHermesCatalog());
+  }
 }
 
 async function ensureLive(input: HarnessSessionInput): Promise<Live> {
