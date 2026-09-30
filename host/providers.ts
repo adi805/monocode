@@ -7,6 +7,7 @@ import * as pi from "../src/integrations/harness/providers/pi/pi";
 import * as omp from "../src/integrations/harness/providers/omp/omp";
 import * as fx from "../src/integrations/harness/providers/fx/fx";
 import * as hermes from "../src/integrations/harness/providers/hermes/hermes";
+import * as opencrabs from "../src/integrations/harness/providers/opencrabs/opencrabs";
 import * as antigravity from "../src/integrations/harness/providers/antigravity/antigravity";
 import type {
   SendTurnInput,
@@ -137,6 +138,14 @@ export const hostProviders: Record<RemoteProvider, HostProvider> = {
     stop: hermes.forgetHermesSession,
     bind: hermes.bindHermesSession,
     approve: hermes.respondHermesApproval,
+    answer: unsupportedQuestion,
+  },
+  opencrabs: {
+    send: opencrabs.sendOpenCrabsTurn,
+    cancel: opencrabs.cancelOpenCrabsTurn,
+    stop: opencrabs.forgetOpenCrabsSession,
+    bind: opencrabs.bindOpenCrabsSession,
+    approve: opencrabs.respondOpenCrabsApproval,
     answer: unsupportedQuestion,
   },
   antigravity: {

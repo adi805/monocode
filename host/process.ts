@@ -20,6 +20,7 @@ const binaryNames: Record<RemoteProvider, string[]> = {
   omp: ["omp"],
   fx: ["fx"],
   hermes: ["hermes"],
+  opencrabs: ["opencrabs"],
   antigravity: ["agy_acp_server.par"],
 };
 
