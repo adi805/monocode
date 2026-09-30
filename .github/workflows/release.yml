@@ -391,6 +391,10 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
         run: |
           set -euo pipefail
+          if [[ -z "${R2_BUCKET_NAME:-}" || -z "${R2_ACCOUNT_ID:-}" ]]; then
+            echo "R2 not configured (R2_BUCKET_NAME/R2_ACCOUNT_ID empty): skipping updater feed publish (fork mode)"
+            exit 0
+          fi
           ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           aws s3 cp latest.json "s3://${R2_BUCKET_NAME}/latest.json" \
             --content-type "application/json" \
