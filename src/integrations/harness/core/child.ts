@@ -363,6 +363,7 @@ async function resolveHarnessBinary(
     fx: "harness_resolve_fx",
     hermes: "harness_resolve_hermes",
     antigravity: "harness_resolve_antigravity",
+    opencrabs: "harness_resolve_opencrabs",
   };
   return invoke(command[provider]);
 }
@@ -419,6 +420,12 @@ export function resolveHermesBinary(
   binaryPath?: string | null,
 ): Promise<{ path: string }> {
   return resolveHarnessBinary("hermes", binaryPath);
+}
+
+export function resolveOpenCrabsBinary(
+  binaryPath?: string | null,
+): Promise<{ path: string }> {
+  return resolveHarnessBinary("opencrabs", binaryPath);
 }
 
 export function resolveAntigravityBinary(

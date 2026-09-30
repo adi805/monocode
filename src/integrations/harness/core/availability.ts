@@ -10,6 +10,7 @@ import {
   resolveHermesBinary,
   resolveOmpBinary,
   resolveOpenCodeBinary,
+  resolveOpenCrabsBinary,
   resolvePiBinary,
 } from "./child";
 import { isLiveHarness } from "./registry";
@@ -46,11 +47,15 @@ const CLI: Record<HarnessId, { name: string; install?: string }> = {
   omp: { name: "omp CLI", install: "curl -fsSL https://omp.sh/install | sh" },
   fx: { name: "fx CLI", install: "curl -fsSL https://fx.sh/setup.sh | bash" },
   hermes: {
-    name: "OpenCrabs ACP bridge",
+    name: "Hermes Agent CLI",
     install:
       "Install from hermes-agent.nousresearch.com, then run hermes model",
   },
   antigravity: { name: "Antigravity ACP server (agy_acp_server.par)" },
+  opencrabs: {
+    name: "OpenCrabs CLI",
+    install: "https://github.com/adolfousier/opencrabs",
+  },
 };
 
 let inflight: Promise<void> | null = null;
@@ -155,6 +160,14 @@ export function probeHarnessAvailability(
       if (id === "antigravity") {
         try {
           await resolveAntigravityBinary();
+          return [id, true] as const;
+        } catch {
+          return [id, false] as const;
+        }
+      }
+      if (id === "opencrabs") {
+        try {
+          await resolveOpenCrabsBinary();
           return [id, true] as const;
         } catch {
           return [id, false] as const;

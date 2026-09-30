@@ -1296,6 +1296,7 @@ fn is_harness_argv_token(part: &str) -> bool {
             | "omp"
             | "fx"
             | "hermes"
+            | "opencrabs"
             | "agy_acp_server.par"
             | "pi"
             | "worker-server"
@@ -1536,6 +1537,7 @@ fn resolve_harness_binary_default(provider: &str) -> Option<PathBuf> {
         "fx" => resolve_fx(),
         "hermes" => resolve_hermes(),
         "antigravity" => resolve_antigravity(),
+        "opencrabs" => resolve_opencrabs(),
         _ => None,
     }
 }
@@ -1581,6 +1583,9 @@ fn resolve_harness_binary_override(provider: &str, binary_path: &str) -> Result<
         "fx" => &["fx"],
         "hermes" => &["hermes"],
         "antigravity" => &["agy_acp_server.par"],
+        // "hermes" also accepted: the Windows SSH-bridge shim ships as
+        // hermes.exe and its --version banner contains "opencrabs".
+        "opencrabs" => &["opencrabs", "hermes"],
         _ => {
             return Err(format!(
                 "Unsupported configured harness provider: {provider}"
@@ -1653,6 +1658,7 @@ fn validate_harness_binary_version(provider: &str, path: &Path) -> Result<(), St
         "claude" => lower.contains("claude"),
         "codex" => lower.contains("codex"),
         "hermes" => lower.contains("hermes"),
+        "opencrabs" => lower.contains("opencrabs"),
         _ => true,
     };
     if has_version && provider_marker {
@@ -1943,6 +1949,47 @@ fn resolve_hermes() -> Option<PathBuf> {
     }
 
     first_binary(candidates)
+}
+
+fn resolve_opencrabs() -> Option<PathBuf> {
+    let home = dirs_home().map(PathBuf::from);
+    let mut candidates: Vec<PathBuf> = Vec::new();
+
+    if let Some(home) = &home {
+        candidates.push(home.join(".opencrabs/bin/opencrabs"));
+        candidates.push(home.join(".local/bin/opencrabs"));
+        candidates.push(home.join(".cargo/bin/opencrabs"));
+        candidates.push(home.join(".npm-global/bin/opencrabs"));
+        candidates.push(home.join("n/bin/opencrabs"));
+    }
+    #[cfg(windows)]
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) {
+        candidates.push(local_app_data.join("opencrabs/bin/opencrabs"));
+        candidates.push(local_app_data.join("Programs/opencrabs/opencrabs"));
+    }
+    #[cfg(target_os = "macos")]
+    candidates.push(PathBuf::from("/opt/homebrew/bin/opencrabs"));
+    candidates.push(PathBuf::from("/usr/local/bin/opencrabs"));
+    candidates.push(PathBuf::from("/usr/bin/opencrabs"));
+    candidates.push(PathBuf::from("/snap/bin/opencrabs"));
+    if let Some(from_shell) = which_via_login_shell("opencrabs") {
+        candidates.push(from_shell);
+    }
+
+    first_binary(candidates)
+}
+
+/// Resolve the OpenCrabs CLI (`opencrabs`).
+#[tauri::command(async)]
+pub fn harness_resolve_opencrabs() -> Result<CursorBinary, String> {
+    resolve_opencrabs()
+        .map(|path| CursorBinary {
+            path: path.to_string_lossy().into_owned(),
+        })
+        .ok_or_else(|| {
+            "OpenCrabs CLI not found. Install it from https://github.com/adolfousier/opencrabs, or set the OpenCrabs CLI path in Settings to a bridge executable."
+                .into()
+        })
 }
 
 fn resolve_antigravity() -> Option<PathBuf> {

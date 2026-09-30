@@ -155,6 +155,7 @@ describe("child bridge", () => {
               fx: "/opt/fx/bin/fx",
               hermes: "/opt/hermes/bin/hermes",
               antigravity: "/opt/antigravity/bin/agy_acp_server.par",
+              opencrabs: "/opt/opencrabs/bin/opencrabs",
             })
           : null,
     });
@@ -179,6 +180,11 @@ describe("child bridge", () => {
         "antigravity",
         "/opt/antigravity/bin/agy_acp_server.par",
         child.resolveAntigravityBinary,
+      ],
+      [
+        "opencrabs",
+        "/opt/opencrabs/bin/opencrabs",
+        child.resolveOpenCrabsBinary,
       ],
     ] as const) {
       await resolve();

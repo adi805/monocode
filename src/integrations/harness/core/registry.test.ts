@@ -75,6 +75,7 @@ describe("harness registry", () => {
       "fx",
       "hermes",
       "antigravity",
+      "opencrabs",
     ];
 
     expect(
@@ -90,6 +91,7 @@ describe("harness registry", () => {
       fx: false,
       hermes: false,
       antigravity: false,
+      opencrabs: false,
     });
   });
 
@@ -105,6 +107,7 @@ describe("harness registry", () => {
       "omp",
       "fx",
       "antigravity",
+      "opencrabs",
     ];
 
     expect(
@@ -119,6 +122,7 @@ describe("harness registry", () => {
       omp: true,
       fx: false,
       antigravity: false,
+      opencrabs: true,
     });
   });
   it("advertises and dispatches compaction only when an adapter supports it", async () => {
