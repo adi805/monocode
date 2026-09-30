@@ -14,7 +14,7 @@ import {
 
 const PROBE_ID = "monocode-opencrabs-probe";
 const DISCOVERY_TIMEOUT_MS = 45_000;
-const REQUEST_TIMEOUT_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 90_000;
 
 /**
  * Host-side catalog discovery (remote-host contract): spawn `<binary> acp`,

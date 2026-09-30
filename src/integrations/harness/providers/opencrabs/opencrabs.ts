@@ -55,7 +55,7 @@ type Resume = { acpSessionId: string; cwd: string };
 
 // OpenCrabs boots a full runtime (config, brain files, provider handshake)
 // before it can answer `initialize`, so give it more room than a thin CLI.
-const INIT_TIMEOUT_MS = 30_000;
+const INIT_TIMEOUT_MS = 120_000;
 const SESSION_TIMEOUT_MS = 45_000;
 const CONTROL_TIMEOUT_MS = 15_000;
 const PROMPT_TIMEOUT_MS = 30 * 60_000;
