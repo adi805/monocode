@@ -370,16 +370,29 @@ jobs:
           NODE
           }
           IS_DRAFT=$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq .isDraft)
-          if [[ "$IS_DRAFT" == true ]]; then
-            # Draft assets can be replaced after an interrupted upload. A
-            # published release is immutable, so only resume drafts.
-            gh release upload "$GITHUB_REF_NAME" "${RELEASE_FILES[@]}" --clobber
-            verify_release true
-            gh release edit "$GITHUB_REF_NAME" --draft=false
-          elif [[ "$IS_DRAFT" != false ]]; then
-            echo "Unexpected GitHub Release state: $IS_DRAFT" >&2
-            exit 1
-          fi
+          case "$IS_DRAFT" in
+            true)
+              # Draft assets can be replaced after an interrupted upload.
+              gh release upload "$GITHUB_REF_NAME" "${RELEASE_FILES[@]}" --clobber
+              verify_release true
+              gh release edit "$GITHUB_REF_NAME" --draft=false
+              ;;
+            false)
+              # Fork semantics: retagging a published version is an explicit
+              # republish. Upstream skipped this path (silently leaving the
+              # old bytes in place while the job reported success). Demote to
+              # draft, replace same-named assets, verify, re-publish.
+              echo "Release $GITHUB_REF_NAME is already published: republishing new build (FORK-ONLY policy)."
+              gh release edit "$GITHUB_REF_NAME" --draft=true
+              gh release upload "$GITHUB_REF_NAME" "${RELEASE_FILES[@]}" --clobber
+              verify_release true
+              gh release edit "$GITHUB_REF_NAME" --draft=false
+              ;;
+            *)
+              echo "Unexpected GitHub Release state: $IS_DRAFT" >&2
+              exit 1
+              ;;
+          esac
           verify_release false
 
       - name: Publish updater feed
