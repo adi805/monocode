@@ -73,7 +73,7 @@ const liveByThread = new Map<string, Live>();
 const resumeByThread = new Map<string, Resume>();
 const cancelledThreads = new Set<string>();
 
-/** Slash commands pushed by the server, cached per CrabsCode thread. */
+/** Slash commands pushed by the server, cached per MonoCode thread. */
 const commandsByThread = new Map<string, NativeCommand[]>();
 const commandSubscribers = new Map<string, Set<(c: NativeCommand[]) => void>>();
 
@@ -246,7 +246,7 @@ export async function compactOpenCrabsContext(
   await live.turns;
 }
 
-/** Seed ACP resume state for a restored CrabsCode session. */
+/** Seed ACP resume state for a restored MonoCode session. */
 export function bindOpenCrabsSession(
   threadId: string,
   acpSessionId: string,
@@ -315,7 +315,7 @@ async function ensureLive(input: SendTurnInput): Promise<Live> {
       emit({ type: "session.ended", code });
     },
     (line) => {
-      console.debug("[crabscode] opencrabs stderr", line);
+      console.debug("[monocode] opencrabs stderr", line);
     },
   );
 
@@ -334,7 +334,7 @@ async function ensureLive(input: SendTurnInput): Promise<Live> {
       {
         protocolVersion: 1,
         clientCapabilities: CLIENT_CAPABILITIES,
-        clientInfo: { name: "crabscode", version: "0.5.0" },
+        clientInfo: { name: "monocode", version: "0.5.0" },
       },
       INIT_TIMEOUT_MS,
     );
@@ -465,7 +465,7 @@ async function applyRuntimeMode(live: Live, input: SendTurnInput): Promise<void>
     )
     .catch((error: unknown) => {
       const detail = error instanceof Error ? error.message : String(error);
-      console.debug("[crabscode] opencrabs set_mode failed", detail);
+      console.debug("[monocode] opencrabs set_mode failed", detail);
       if (/timed out|not running|exited|closed|pipe/i.test(detail)) throw error;
     });
 }
