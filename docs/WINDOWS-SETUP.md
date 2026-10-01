@@ -31,21 +31,27 @@ opencrabs acp  (otak agent di VPS)
 
 1. Unduh `MonoCode_0.5.0_x64-setup.exe` dari halaman **Releases** repo ini, lalu install. Kalau SmartScreen muncul: More info -> Run anyway (app belum ternama, bukan tanda malware).
 2. Unduh `opencrabs-bridge.exe` (dari Releases repo `opencrabs-windows`, tag `win-desktop-preview`), taruh di `C:\Users\<you>\`.
-3. Pastikan SSH ke server jalan tanpa password:
+3. Satu kali setup, arahkan jembatan ke server lo. Data ini disimpan di env Windows lo, TIDAK di dalam binary:
+   ```powershell
+   setx OPENCRABS_SSH_TARGET <alias-vps-lo>
+   setx OPENCRABS_REMOTE_BIN /home/<user>/.opencrabs/opencrabs
+   ```
+   Tutup dan buka ulang PowerShell setelah `setx` supaya variabel aktif (app yang di-start dari Start Menu juga baca env user baru ini).
+4. Pastikan SSH ke server jalan tanpa password:
    ```powershell
    ssh <alias-vps>
    ```
    Kalau muncul `Too many authentication failures`, berarti key mesin ini belum terdaftar di `~/.ssh/authorized_keys` di VPS. Daftarkan dulu, jangan lanjut.
-4. Tes jembatan:
+5. Tes jembatan:
    ```powershell
    & C:\Users\<you>\opencrabs-bridge.exe --version
    # harus jawab: opencrabs-acp-bridge 0.5.4
    & C:\Users\<you>\opencrabs-bridge.exe --selftest
    # harus jawab: SELFTEST PASS: ssh round-trip through pump works
    ```
-5. Buka MonoCode -> Settings -> provider **OpenCrabs** -> isi **CLI path** dengan path bridge -> save.
-6. Chat baru -> pilih agent **OpenCrabs**. Koneksi pertama butuh 10 sampai 30 detik (SSH handshake + boot server sekitar 17 detik). Init timeout build ini 120 detik, jadi santai saja.
-7. Verifikasi:
+6. Buka MonoCode -> Settings -> provider **OpenCrabs** -> isi **CLI path** dengan path bridge -> save.
+7. Chat baru -> pilih agent **OpenCrabs**. Koneksi pertama butuh 10 sampai 30 detik (SSH handshake + boot server sekitar 17 detik). Init timeout build ini 120 detik, jadi santai saja.
+8. Verifikasi:
    - Model picker terisi katalog live dari server, tanpa perlu kirim pesan dulu.
    - Tanya: "sebut path absolut binary yang lagi lo jalanin". Jawaban benar: `/home/<user>/.opencrabs/opencrabs` (bukan path Windows).
 
