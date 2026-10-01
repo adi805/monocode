@@ -58,7 +58,9 @@ type Resume = { acpSessionId: string; cwd: string };
 const INIT_TIMEOUT_MS = 120_000;
 const SESSION_TIMEOUT_MS = 45_000;
 const CONTROL_TIMEOUT_MS = 15_000;
-const PROMPT_TIMEOUT_MS = 30 * 60_000;
+// Agentic turns legitimately run long (CI polling, big builds): 30 minutes
+// was exceeded by ordinary `gh run` watch loops. 120 minutes is the ceiling.
+const PROMPT_TIMEOUT_MS = 120 * 60_000;
 
 const SERVER_HELP =
   "Check that your OpenCrabs build supports `opencrabs acp` (v0.5.4+). " +
@@ -488,13 +490,21 @@ async function prompt(live: Live, input: SendTurnInput): Promise<void> {
   } catch (error) {
     if (live.cancelled) return;
     const detail = error instanceof Error ? error.message : String(error);
+    // A prompt ceiling is NOT a bridge/init problem: long agent turns (CI
+    // polling, big builds) legitimately outlive short caps. Give it its own
+    // honest message instead of the generic SERVER_HELP banner.
+    const promptCeiling = /session\/prompt timed out/.test(detail);
     live.onEvent({
       type: "session.error",
-      message: /timed out|not running|exited|closed|pipe|method not found/i.test(
-        detail,
-      )
-        ? `${detail.trim()}\n\n${SERVER_HELP}`
-        : detail,
+      message: promptCeiling
+        ? `${detail.trim()}\n\nTurn exceeded the ${Math.round(
+            PROMPT_TIMEOUT_MS / 60_000,
+          )}-minute client ceiling (long turns: CI polling, builds). The turn may still be running on the server; send a new message to re-attach, or watch the session in the TUI.`
+        : /timed out|not running|exited|closed|pipe|method not found/i.test(
+              detail,
+            )
+          ? `${detail.trim()}\n\n${SERVER_HELP}`
+          : detail,
     });
     throw error;
   }
