@@ -14,6 +14,8 @@
 
 Works with your subscriptions on Claude Code, Codex, Cursor, Grok Build, OpenCode, Antigravity, Pi, omp, fx, and Hermes Agent. If they’re installed and logged in, MonoCode can run them. Tabs are sessions. The composer is the input. MonoCode does not sell tokens.
 
+> **This fork (adi805/monocode)** keeps the original MonoCode name and codebase out of respect for upstream [hardbeat920/monocode](https://github.com/hardbeat920/monocode). Additions here: a first-class **OpenCrabs** provider (ACP over stdio) with a live server-side model catalog, and an SSH bridge (`opencrabs-bridge.exe`) so the agent brain can run on your own always-on machine while the GUI stays local. Windows setup guide: [docs/WINDOWS-SETUP.md](docs/WINDOWS-SETUP.md). Adapter pattern follows the reference implementation in [moneyacademyKE/monocode](https://github.com/moneyacademyKE/monocode).
+
 ## Install
 
 > Install and log in to at least one provider first:
