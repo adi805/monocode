@@ -64,11 +64,19 @@ vi.mock("../../../shared/ui/Popover", () => ({
 }));
 
 import { ModelControlPills, ModelPicker } from "./ModelPicker";
+import { HARNESSES } from "../model/session";
 import {
   resetHarnessModelOverlays,
   saveRecentModelChoice,
   setHarnessModels,
 } from "../model/models";
+
+// The provider rail sizes itself off the harness list (ModelPicker.tsx:
+// (HARNESSES.length + 1) * 32 + HARNESSES.length * 4 + 12, frame = +2),
+// so derive the expected flyout height instead of hardcoding a count.
+const MENU_HEIGHT =
+  (HARNESSES.length + 1) * 32 + HARNESSES.length * 4 + 12;
+const FRAME_HEIGHT = MENU_HEIGHT + 2;
 
 let container: HTMLDivElement;
 let root: Root;
@@ -166,9 +174,9 @@ describe("model picker", () => {
     const modelFlyout = container.querySelector<HTMLElement>(
       '[role="dialog"][aria-label="Models"]',
     )!;
-    expect(modelFlyout.style.height).toBe("404px");
-    expect(modelFlyout.dataset.minHeight).toBe("406");
-    expect(modelFlyout.dataset.maxHeight).toBe("406");
+    expect(modelFlyout.style.height).toBe(`${MENU_HEIGHT}px`);
+    expect(modelFlyout.dataset.minHeight).toBe(String(FRAME_HEIGHT));
+    expect(modelFlyout.dataset.maxHeight).toBe(String(FRAME_HEIGHT));
     expect(
       container.querySelector('[role="tablist"][aria-orientation="vertical"]'),
     ).not.toBeNull();
