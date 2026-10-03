@@ -24,9 +24,12 @@ import {
   sessionIdFromResult,
 } from "../grok/grokProtocol";
 import {
+  COMPACT_METHODS,
+  SET_MODEL_METHODS,
   catalogToModels,
   nativeCommandsFromUpdate,
   openCrabsCatalogFromSessionNew,
+  requestAcrossRenames,
 } from "./opencrabsProtocol";
 import { openCrabsPromptBlocks } from "./opencrabsPrompt";
 import type {
@@ -239,8 +242,10 @@ export async function compactOpenCrabsContext(
     .catch(() => undefined)
     .then(async () => {
       if (live.cancelled) return;
-      await live.acp.request(
-        "session/compact",
+      await requestAcrossRenames(
+        (method, params, timeoutMs) =>
+          live.acp.request(method, params, timeoutMs),
+        COMPACT_METHODS,
         { sessionId: live.acpSessionId },
         PROMPT_TIMEOUT_MS,
       );
@@ -434,8 +439,10 @@ async function applyModelSelection(
   const base = nativeModelId(input.model).trim();
   if (!base) return;
   try {
-    await live.acp.request(
-      "session/set_model",
+    await requestAcrossRenames(
+      (method, params, timeoutMs) =>
+        live.acp.request(method, params, timeoutMs),
+      SET_MODEL_METHODS,
       { sessionId: live.acpSessionId, modelId: base },
       CONTROL_TIMEOUT_MS,
     );
