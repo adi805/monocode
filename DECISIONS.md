@@ -72,12 +72,21 @@ Use this file as the target project's source of truth for approved and proposed 
   Impact: The workflow pins its action to a commit identifier and drops the unnecessary write permission.
 
 - [2026-10-02 00:00] Decision: Defer the model and compact wire-name migration
-  Status: Proposed
+  Status: Superseded
   Approval: N/A - not yet accepted
   Requirement IDs: FR-005, FR-010
   Context: Upstream moved these calls behind a prefixed namespace and keeps the old spelling for one release; the fork currently sends the old spelling.
   Rationale: The migration is a pure rename with identical parameters, so it can ship with the next release rather than blocking on it.
   Impact: The next release should send the prefixed names and read the catalog through the newer options surface, so nothing depends on the legacy spelling when upstream retires it.
+  Superseded by: the 2026-10-03 entry below. The premise turned out to be incomplete: deferring was safe, but sending only the prefixed name would not have been.
+
+- [2026-10-03 02:50] Decision: Send the prefixed wire names first and fall back to the legacy names only on method-not-found
+  Status: Accepted
+  Approval: Owner instruction "Gas semua pake plan" in the working chat, 2026-10-03, covering this plan task
+  Requirement IDs: FR-005, FR-010, NFR-004
+  Context: A live probe of the deployed agent binary captured `{"error":{"code":-32601,"message":"method not found: _opencrabs/set_model"}}` and the same for `_opencrabs/compact`, while the legacy `session/set_model` and `session/compact` both answered success. The deployed build predates the upstream rename, so the direction of compatibility is the reverse of what the deferred decision assumed.
+  Rationale: Trying the prefixed name first and falling back on method-not-found is the only ordering that works against both the deployed 0.5.4 server and a post-migration server. Falling back on any other error would hide a real failure, so the fallback is gated on the method-not-found condition alone.
+  Impact: `SET_MODEL_METHODS` and `COMPACT_METHODS` are prefixed-first pairs consumed by `requestAcrossRenames` at the two call sites. `configOptions` is now read when present, with the older `models` field as the fallback, because the probe confirmed `configOptions` is absent (0 hits) on the deployed server. Covered by `opencrabsProtocol.test.ts`; check and host jobs success on all three platforms.
 
 ## AI Agent Rules
 
