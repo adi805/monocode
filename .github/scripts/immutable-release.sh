@@ -1,44 +1,46 @@
 #!/usr/bin/env bash
-# Restore the immutable-release helper that the workflows call but that was
-# never committed, so Release / host / windows-artifact / Test-installer stop
-# dying with 127 "command not found" before they reach any real work.
+# Restores the helper four workflows call but which was never committed, so the
+# "Process existing release(s)" step stops dying with exit 127 before any real
+# work runs. Release, host, windows-artifact and Test-installer are all red on
+# main at every schedule tick for exactly this reason.
 #
-# Published GitHub releases are immutable: `gh release create` against an
-# existing published tag returns success WITHOUT uploading, which is how two
-# "fresh bytes" claims turned out to be false. The rule this enforces is the
-# republish path: delete the tag, re-push it, then draft-upload-verify-publish,
-# and always regenerate SHA256SUMS after replacing any asset.
+# Rule encoded here: a PUBLISHED GitHub release is immutable - `gh release
+# create` against a published tag returns success WITHOUT uploading anything, so
+# "it said done" is not proof the assets are fresh. Replacing an asset means
+# deleting the tag ref, re-pushing it, then draft-upload-verify-publish, and
+# regenerating SHA256SUMS whenever any asset changes.
 set -euo pipefail
 
-REPO="${1:?usage: immutable-release.sh <process|ensure-republishable> [owner/repo] [tag]}"
-ACTION="${2:-process}"
-TARGET_REPO="${3:-$GITHUB_REPOSITORY}"
-TAG="${4:-}"
+REPO="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY must be set}"
+ACTION="${1:?usage: immutable-release.sh <process|ensure-republishable|is-published> [tag]}"
+TAG="${2:-${RELEASE_TAG:-}}"
 
-gh_api() { gh api "$@"; }
+release_exists() {
+  [ -n "$TAG" ] || return 1
+  gh api "repos/$REPO/releases/tags/$TAG" >/dev/null 2>&1
+}
 
 case "$ACTION" in
   process)
-    # Nothing to do on a normal build; a published release is left untouched.
-    echo "immutable-release: no published release processing for '$TAG' on $TARGET_REPO"
+    # Normal build path: leave any published release untouched. Republishing is
+    # an explicit operator action, never a side effect of a build.
+    if release_exists; then
+      echo "immutable-release: release '$TAG' is published and stays as-is"
+    else
+      echo "immutable-release: no published release for '$TAG'; nothing to process"
+    fi
     ;;
   is-published)
-    [ -n "$TAG" ] || { echo "immutable-release: is-published needs a tag" >&2; exit 2; }
-    if gh_api "repos/$TARGET_REPO/releases/tags/$TAG" >/dev/null 2>&1; then
-      echo "published"
-      exit 0
-    fi
-    echo "absent"
-    exit 1
+    if release_exists; then echo published; else echo absent; exit 1; fi
     ;;
   ensure-republishable)
     [ -n "$TAG" ] || { echo "immutable-release: ensure-republishable needs a tag" >&2; exit 2; }
-    if gh_api "repos/$TARGET_REPO/releases/tags/$TAG" >/dev/null 2>&1; then
-      echo "immutable-release: $TAG is published; deleting so assets can be replaced"
-      gh_api -X DELETE "repos/$TARGET_REPO/git/refs/tags/$TAG" >/dev/null 2>&1 || true
-      exit 0
+    if release_exists; then
+      echo "immutable-release: deleting tag '$TAG' so assets can be re-uploaded"
+      gh api -X DELETE "repos/$REPO/git/refs/tags/$TAG" >/dev/null 2>&1 || true
+    else
+      echo "immutable-release: tag '$TAG' is not published"
     fi
-    echo "immutable-release: $TAG has no published release"
     ;;
   *)
     echo "immutable-release: unknown action '$ACTION'" >&2
