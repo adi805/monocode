@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   COMPOSER_RUNNER_DEFAULT,
+  AUTOSAVE_DEFAULT,
   COLLAPSED_PROJECT_RAIL_MODE_DEFAULT,
   searchSettings,
+  CLASSIC_LAYOUT_HIDDEN_SETTINGS,
+  INSET_LAYOUT_HIDDEN_SETTINGS,
   SETTINGS_INDEX,
   settingsSectionsByGroup,
   MODEL_CONTROLS_DEFAULT,
@@ -15,6 +18,7 @@ import {
   LIVE_AGENTS_ENABLED_DEFAULT,
   TAB_ANIMATIONS_ENABLED_DEFAULT,
   loadComposerRunner,
+  loadAutosave,
   loadCollapsedProjectRailMode,
   loadModelControls,
   loadDiffViewer,
@@ -31,6 +35,7 @@ import {
   loadTabAnimationsEnabled,
   NOTES_ENABLED_DEFAULT,
   saveComposerRunner,
+  saveAutosave,
   saveCollapsedProjectRailMode,
   saveModelControls,
   saveDiffViewer,
@@ -57,6 +62,7 @@ const LIVE_AGENTS_KEY = "monocode.liveAgentsEnabled";
 const GRID_ARCADE_KEY = "monocode.gridArcadeEnabled";
 const DIFF_VIEWER_KEY = "monocode.diffViewer";
 const FORMAT_ON_SAVE_KEY = "monocode.formatOnSave";
+const AUTOSAVE_KEY = "monocode.autosave";
 const FILE_TAB_MODE_KEY = "monocode.fileTabMode";
 const FOLLOW_UP_BEHAVIOR_KEY = "monocode.followUpBehavior";
 const TAB_ANIMATIONS_KEY = "monocode.tabAnimationsEnabled";
@@ -445,6 +451,22 @@ describe("workspace navigation keybindings", () => {
       ),
     ).toBe(true);
   });
+  it("documents Escape stopping a busy session as a fixed binding", () => {
+    expect(KEYBINDINGS.find((row) => row.command === "Session: Stop")).toEqual({
+      command: "Session: Stop",
+      keys: "Esc",
+      when: "sessionBusy && !terminalFocus",
+      fixed: true,
+    });
+  });
+  it("ignores stored overrides for fixed bindings", () => {
+    localStorage.setItem(
+      KEYBINDING_OVERRIDES_KEY,
+      '{"Session: Stop":{"disabled":true}}',
+    );
+    expect(loadKeybindingOverrides()).toEqual({});
+    localStorage.removeItem(KEYBINDING_OVERRIDES_KEY);
+  });
   it("documents same-tab session switching", () => {
     expect(
       KEYBINDINGS.filter((row) => row.command.includes("in Current Tab")),
@@ -480,6 +502,21 @@ describe("format on save setting", () => {
     expect(loadFormatOnSave()).toBe(false);
     saveFormatOnSave(true);
     expect(loadFormatOnSave()).toBe(true);
+  });
+});
+
+describe("autosave setting", () => {
+  beforeEach(mockLocalStorage);
+  afterEach(() => {
+    localStorage.removeItem(AUTOSAVE_KEY);
+  });
+
+  it("defaults to off and persists changes", () => {
+    expect(AUTOSAVE_DEFAULT).toBe(false);
+    expect(loadAutosave()).toBe(false);
+    saveAutosave(true);
+    expect(localStorage.getItem(AUTOSAVE_KEY)).toBe("1");
+    expect(loadAutosave()).toBe(true);
   });
 });
 
@@ -589,7 +626,9 @@ describe("settings navigation", () => {
       "keybindings",
       "chat",
       "providers",
+      "mcp",
       "skills",
+      "monos",
       "inbox",
       "archive",
       "worktrees",
@@ -615,6 +654,22 @@ describe("settings search", () => {
 
   it("ranks label matches over keyword matches, and pages last", () => {
     expect(searchSettings("glass").map((result) => result.label)).toEqual([
+      "Main pane glass",
+      "Blur radius",
+      "Sidebar opacity",
+      "Transparent window",
+      "Appearance",
+    ]);
+  });
+
+  it("leaves out the rows the current layout does not show", () => {
+    const labels = (hidden: ReadonlySet<string>) =>
+      searchSettings("glass", undefined, hidden).map((result) => result.label);
+    expect(labels(INSET_LAYOUT_HIDDEN_SETTINGS)).toEqual([
+      "Transparent window",
+      "Appearance",
+    ]);
+    expect(labels(CLASSIC_LAYOUT_HIDDEN_SETTINGS)).toEqual([
       "Main pane glass",
       "Blur radius",
       "Sidebar opacity",

@@ -8,9 +8,12 @@ import { SettingsView } from "./SettingsView";
 import { rememberNotificationProjects } from "../../notifications/model/notificationProjects";
 import {
   SETTINGS_INDEX,
+  CLASSIC_LAYOUT_HIDDEN_SETTINGS,
+  INSET_LAYOUT_HIDDEN_SETTINGS,
   SETTINGS_SECTIONS,
   type SettingsSectionId,
 } from "../model/settings";
+import { loadInsetLayout } from "../model/appearance";
 import {
   providerAccounts,
   saveProviderAccount,
@@ -23,6 +26,13 @@ import {
   HARNESSES,
   HARNESS_TITLE,
 } from "../../sessions/model/session";
+import { saveMaskEmails, saveShowRemainingUsage } from "../model/displayPrefs";
+import {
+  createMono,
+  findMono,
+  monoLook,
+  updateMono,
+} from "../../monos/model/mono";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(async () => undefined),
@@ -99,7 +109,10 @@ beforeEach(() => {
   document.body.append(container);
   root = createRoot(container);
   onSelectSection = vi.fn();
-  vi.mocked(invoke).mockReset().mockResolvedValue(undefined);
+  vi.mocked(invoke).mockReset().mockImplementation(async command => command === "mobile_status" ? {
+    enabled: false, listening: false, name: "Desktop", fingerprint: null,
+    openRouter: true, remoteAddress: "", routerStatus: "Off", addresses: [], devices: [],
+  } : undefined);
 });
 
 afterEach(async () => {
@@ -113,7 +126,123 @@ afterEach(async () => {
 });
 
 describe("settings pages", () => {
+  it("saves each Mono's session visibility and restores it when settings reopen", async () => {
+    const mono = createMono();
+    const other = createMono();
+    const toggle = (id: string) =>
+      container.querySelector<HTMLButtonElement>(
+        `[role="switch"][aria-label="Show sessions started by ${monoLook(findMono(id)!).name} in sidebar"]`,
+      )!;
+    await render("monos");
+    // Off until turned on: a Mono's sessions stay in its overview.
+    expect(toggle(mono.id).getAttribute("aria-checked")).toBe("false");
+    expect(toggle(other.id).getAttribute("aria-checked")).toBe("false");
+    await act(async () => toggle(mono.id).click());
+    expect(toggle(mono.id).getAttribute("aria-checked")).toBe("true");
+    expect(findMono(mono.id)?.showStartedSessionsInSidebar).toBe(true);
+    expect(toggle(other.id).getAttribute("aria-checked")).toBe("false");
+    await render("general");
+    await render("monos");
+    expect(toggle(mono.id).getAttribute("aria-checked")).toBe("true");
+    await act(async () => updateMono(mono.id, (entry) => ({
+      ...entry,
+      showStartedSessionsInSidebar: false,
+    })));
+    expect(toggle(mono.id).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("blurs account emails by default and hides them when settings reopen", async () => {
+    vi.mocked(invoke).mockImplementation(async (command, args) => {
+      if (command === "provider_account_identity") {
+        const { provider } = args as { provider: string };
+        return { email: `${provider}@example.com`, plan: "Pro" };
+      }
+      return undefined;
+    });
+    await render("providers");
+
+    const emails = container.querySelectorAll<HTMLButtonElement>(
+      '[aria-label="Reveal email"]',
+    );
+    expect(emails).toHaveLength(2);
+    expect(
+      [...emails].every((email) =>
+        email.querySelector("span")?.className.includes("blur-[5px]"),
+      ),
+    ).toBe(true);
+    expect(container.textContent).toContain("Pro");
+    await act(async () => emails[0].click());
+    expect(emails[0].getAttribute("aria-label")).toBe("Hide email");
+    expect(emails[0].querySelector("span")?.className).not.toContain("blur");
+    expect(emails[1].getAttribute("aria-label")).toBe("Reveal email");
+    await act(async () => emails[0].click());
+    expect(emails[0].getAttribute("aria-label")).toBe("Reveal email");
+
+    await act(async () => emails[0].click());
+    await render("general");
+    await render("providers");
+    expect(container.querySelector('[aria-label="Hide email"]')).toBeNull();
+    expect(
+      container.querySelectorAll('[aria-label="Reveal email"]'),
+    ).toHaveLength(2);
+  });
+
+  it("shows used usage and plain emails until the options are turned on", async () => {
+    saveMaskEmails(false);
+    vi.mocked(invoke).mockImplementation(async (command) =>
+      command === "provider_account_identity"
+        ? { email: "user@example.com", plan: "Pro" }
+        : undefined,
+    );
+    setCachedRateLimits("claude", "default", {
+      provider: "claude",
+      session: {
+        usedPercent: 23,
+        windowMinutes: 300,
+        resetsAt: Date.now() + 3_600_000,
+      },
+      weekly: null,
+      monthly: null,
+      resetCredits: null,
+      updatedAt: Date.now(),
+      error: null,
+      status: "ok",
+    });
+
+    await render("providers");
+
+    const used = container.querySelector('[aria-label="5h limit used"]');
+    expect(used?.getAttribute("aria-valuenow")).toBe("23");
+    expect(used?.querySelector("span")?.getAttribute("style")).toBe(
+      "width: 23%;",
+    );
+    expect(container.textContent).toContain("user@example.com");
+    expect(container.querySelector('[aria-label="Reveal email"]')).toBeNull();
+
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>(
+          '[aria-label="Show remaining usage"]',
+        )!
+        .click(),
+    );
+    await act(async () =>
+      container
+        .querySelector<HTMLButtonElement>('[aria-label="Mask account emails"]')!
+        .click(),
+    );
+
+    const remaining = container.querySelector(
+      '[aria-label="5h limit remaining"]',
+    );
+    expect(remaining?.getAttribute("aria-valuenow")).toBe("77");
+    expect(
+      container.querySelectorAll('[aria-label="Reveal email"]').length,
+    ).toBeGreaterThan(0);
+  });
+
   it("shows account usage bars as remaining capacity", async () => {
+    saveShowRemainingUsage(true);
     setCachedRateLimits("claude", "default", {
       provider: "claude",
       session: {
@@ -593,6 +722,27 @@ describe("settings pages", () => {
     expect(hidden?.getAttribute("aria-checked")).toBe("true");
   });
 
+  it("sets interface scale from a menu instead of a live slider", async () => {
+    await render("appearance");
+    const row = container.querySelector('[data-setting-id="interface-scale"]')!;
+    expect(row.querySelector('input[type="range"]')).toBeNull();
+    const trigger = row.querySelector<HTMLButtonElement>(
+      '[aria-haspopup="listbox"]',
+    )!;
+    expect(trigger.getAttribute("aria-label")).toBe("Interface scale: 100%");
+
+    await act(async () => trigger.click());
+    const option = Array.from(
+      document.querySelectorAll<HTMLButtonElement>('[role="option"]'),
+    ).find((node) => node.textContent?.includes("150%"));
+    expect(option).toBeTruthy();
+    await act(async () => option!.click());
+
+    expect(localStorage.getItem("monocode.uiScale")).toBe("1.5");
+    expect(trigger.getAttribute("aria-label")).toBe("Interface scale: 150%");
+    document.documentElement.style.removeProperty("zoom");
+  });
+
   it("reports collapsed project rail changes to the app shell", async () => {
     const onCollapsedProjectRailModeChange = vi.fn();
     await render("appearance", {
@@ -619,8 +769,11 @@ describe("settings pages", () => {
     "renders every indexed setting on the $section page",
     async ({ section }) => {
       await render(section);
+      const hidden = loadInsetLayout()
+        ? INSET_LAYOUT_HIDDEN_SETTINGS
+        : CLASSIC_LAYOUT_HIDDEN_SETTINGS;
       const expected = SETTINGS_INDEX.filter(
-        (entry) => entry.section === section,
+        (entry) => entry.section === section && !hidden.has(entry.id),
       ).map((entry) => entry.id);
       expect(renderedSettingIds().sort()).toEqual(expected.sort());
     },
@@ -782,6 +935,17 @@ describe("settings search", () => {
     expect(options()).toHaveLength(0);
     expect(input.value).toBe("");
     expect(onSelectSection).not.toHaveBeenCalled();
+  });
+
+  it("lists Escape stopping a session without a recorder", async () => {
+    await render("keybindings");
+    const row = [...container.querySelectorAll("span")].find(
+      (span) => span.textContent === "Session: Stop",
+    )?.parentElement;
+    expect(row?.textContent).toContain("Esc");
+    expect(
+      container.querySelector('[aria-label="Change Session: Stop shortcut"]'),
+    ).toBeNull();
   });
 
   it("records a custom keybinding from the key cell", async () => {

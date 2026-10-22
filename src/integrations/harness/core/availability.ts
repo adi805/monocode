@@ -5,6 +5,7 @@ import {
   resolveClaudeBinary,
   resolveCodexBinary,
   resolveCursorBinary,
+  resolveDevinBinary,
   resolveFxBinary,
   resolveGrokBinary,
   resolveHermesBinary,
@@ -14,6 +15,7 @@ import {
   resolvePiBinary,
 } from "./child";
 import { isLiveHarness } from "./registry";
+import { IS_WIN } from "../../../platform/tauri/platform";
 import {
   emitHarnessAvailability,
   harnessAvailabilityProbedAt,
@@ -55,6 +57,12 @@ const CLI: Record<HarnessId, { name: string; install?: string }> = {
   opencrabs: {
     name: "OpenCrabs CLI",
     install: "https://github.com/adolfousier/opencrabs",
+  },
+  devin: {
+    name: "Devin CLI",
+    install: IS_WIN
+      ? "irm https://static.devin.ai/cli/setup.ps1 | iex"
+      : "curl -fsSL https://cli.devin.ai/install.sh | bash",
   },
 };
 
@@ -168,6 +176,14 @@ export function probeHarnessAvailability(
       if (id === "opencrabs") {
         try {
           await resolveOpenCrabsBinary();
+          return [id, true] as const;
+        } catch {
+          return [id, false] as const;
+        }
+      }
+      if (id === "devin") {
+        try {
+          await resolveDevinBinary();
           return [id, true] as const;
         } catch {
           return [id, false] as const;
