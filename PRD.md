@@ -54,8 +54,12 @@ ai_instructions: "#builder-capability-routing-contract"
 
 ### Review Focus
 
-- Should the adapter move to the prefixed `_opencrabs/set_model` and `_opencrabs/compact` method names in the next release, and does upstream retire the legacy aliases by version or by date (adolfousier/opencrabs issue 1815)? This changes wire values inside FR-005 and FR-010, not their acceptance criteria.
-- Is remote-brain mode documented as the Windows default, or as an advanced option behind the CLI-path field? This affects framing in section 4, not the requirements themselves.
+| Decision | Default applied | Why | Reversal cost |
+|---|---|---|---|
+| Prefixed `_opencrabs/set_model` and `_opencrabs/compact` method names | Send the prefixed names and keep the legacy aliases wired until upstream states a retirement version | Issue adolfousier/opencrabs 1815 leaves the retirement unstated, so a hard switch can break a shipped CLI | Two wire constants in the ACP client, then one rerun of AC-022 and AC-023 |
+| Remote-brain mode framing | Advanced option behind the CLI-path field, not the Windows default | The bridge needs a reachable SSH target and a completed selftest, so defaulting it turns a missing host into the first-run failure | Move the mode toggle above the CLI-path field and rewrite step 1 of section 4; no requirement changes |
+| Unavailable harness behaviour | Unavailable with the upstream repository as the install hint, never a silent fallback to another harness | A silent fallback would run the user's prompt somewhere they did not choose | One branch in the availability probe plus a rerun of AC-002 |
+| Permission requests in plan mode | Auto-answer read and search as allow, everything else as deny, without waiting for a human | An unattended plan turn that waits on an approval that nobody clicks is indistinguishable from a hang | One policy map in the permission handler plus a rerun of AC-014 through AC-016 |
 
 ### Functional Requirements
 
@@ -114,10 +118,10 @@ OpenCrabs joins the shared harness contract, so it is listed, labelled, probed, 
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-001 | FR-001 | Positive | The harness appears with label OpenCrabs and its own icon, and a session can be started with it selected | Screenshot of the rail plus a session created with harness id opencrabs |
-| AC-002 | FR-001 | Negative | With no executable present the provider reports unavailable with the upstream repository as the install hint and is not selectable | Availability probe output showing the unavailable hint |
-| AC-003 | FR-002 | Positive | A configured path is used verbatim; with no configured path the resolver returns a candidate for the host platform | Resolver unit test plus a spawn log naming the resolved path |
-| AC-004 | FR-002 | Boundary | Resolution accepts the plain binary name and the bridge name, and rejects a configured path that does not exist instead of falling back silently | Unit test covering both stems and the rejection path |
+| AC-001 | FR-001 | Positive | The harness appears with label OpenCrabs and its own icon, and a session can be started with it selected | Screenshot of the rail plus a session created with harness id opencrabs; artifact `docs/evidence/AC-001.md` |
+| AC-002 | FR-001 | Negative | With no executable present the provider reports unavailable with the upstream repository as the install hint and is not selectable | Availability probe output showing the unavailable hint; artifact `docs/evidence/AC-002.md` |
+| AC-003 | FR-002 | Positive | A configured path is used verbatim; with no configured path the resolver returns a candidate for the host platform | Resolver unit test plus a spawn log naming the resolved path; artifact `docs/evidence/AC-003.md` |
+| AC-004 | FR-002 | Boundary | Resolution accepts the plain binary name and the bridge name, and rejects a configured path that does not exist instead of falling back silently | Unit test covering both stems and the rejection path; artifact `docs/evidence/AC-004.md` |
 
 ### Feature 2: ACP session lifecycle and resume
 
@@ -135,9 +139,9 @@ A turn brings up a transport, completes the handshake, and binds a session, pref
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-005 | FR-003 | Positive | A turn against a reachable server completes the handshake and opens a session, and the provider session id is emitted | Captured handshake response and the bound event in the log |
-| AC-006 | FR-003 | Boundary | A slow-booting server still completes the handshake inside its budget, and a server that never answers fails with the transport help message | Timed run against a real server plus an induced-timeout run |
-| AC-007 | FR-003 | Negative | A rejected resume falls back to creating a new session instead of failing the turn | Log showing the failed load followed by a successful new session |
+| AC-005 | FR-003 | Positive | A turn against a reachable server completes the handshake and opens a session, and the provider session id is emitted | Captured handshake response and the bound event in the log; artifact `docs/evidence/AC-005.md` |
+| AC-006 | FR-003 | Boundary | A slow-booting server still completes the handshake inside its budget, and a server that never answers fails with the transport help message | Timed run against a real server plus an induced-timeout run; artifact `docs/evidence/AC-006.md` |
+| AC-007 | FR-003 | Negative | A rejected resume falls back to creating a new session instead of failing the turn | Log showing the failed load followed by a successful new session; artifact `docs/evidence/AC-007.md` |
 
 ### Feature 3: Live model catalog
 
@@ -155,8 +159,8 @@ The picker reflects the server's real provider and model pairs, read from sessio
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-008 | FR-004 | Positive | After session setup the picker contains the server's pairs and the current pick appears in the badge | Catalog rows captured from the response plus a picker screenshot |
-| AC-009 | FR-004 | Boundary | Opening the provider fills the picker before any message is sent, and an overrunning probe is aborted with no child left | Probe log with elapsed time plus a process check after an induced overrun |
+| AC-008 | FR-004 | Positive | After session setup the picker contains the server's pairs and the current pick appears in the badge | Catalog rows captured from the response plus a picker screenshot; artifact `docs/evidence/AC-008.md` |
+| AC-009 | FR-004 | Boundary | Opening the provider fills the picker before any message is sent, and an overrunning probe is aborted with no child left | Probe log with elapsed time plus a process check after an induced overrun; artifact `docs/evidence/AC-009.md` |
 
 ### Feature 4: Model and mode control per turn
 
@@ -174,8 +178,8 @@ Each turn pushes the chosen model and the runtime or plan mode to the server bef
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-010 | FR-005 | Positive | Choosing a model results in a server-side change for that session and the badge shows the same model | Server response to the model call plus the config-changed event |
-| AC-011 | FR-005 | Negative | A rejected model or mode call leaves the previous selection and does not abort the turn unless the transport itself is broken | Log of the ignored rejection followed by a completed turn |
+| AC-010 | FR-005 | Positive | Choosing a model results in a server-side change for that session and the badge shows the same model | Server response to the model call plus the config-changed event; artifact `docs/evidence/AC-010.md` |
+| AC-011 | FR-005 | Negative | A rejected model or mode call leaves the previous selection and does not abort the turn unless the transport itself is broken | Log of the ignored rejection followed by a completed turn; artifact `docs/evidence/AC-011.md` |
 
 ### Feature 5: Turn execution and streamed updates
 
@@ -193,8 +197,8 @@ Prompts run over the live session and server updates stream into UI events until
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-012 | FR-006 | Positive | A prompt produces streamed updates surfaced as message, reasoning, and tool events, followed by completion | Captured event stream for one turn |
-| AC-013 | FR-006 | Boundary | A turn past the ceiling reports the ceiling message naming the limit in minutes and noting the turn may still run server-side | Induced long turn with the captured message text |
+| AC-012 | FR-006 | Positive | A prompt produces streamed updates surfaced as message, reasoning, and tool events, followed by completion | Captured event stream for one turn; artifact `docs/evidence/AC-012.md` |
+| AC-013 | FR-006 | Boundary | A turn past the ceiling reports the ceiling message naming the limit in minutes and noting the turn may still run server-side | Induced long turn with the captured message text; artifact `docs/evidence/AC-013.md` |
 
 ### Feature 6: Permission requests and plan-mode policy
 
@@ -212,9 +216,9 @@ Server permission requests reach the user, or are auto-answered under plan mode.
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-014 | FR-007 | Positive | A permission request during a normal turn appears in the GUI and the decision returns to the server | Screenshot of the approval plus the response payload |
-| AC-015 | FR-007 | Boundary | In plan mode, read and search are auto-allowed and every other kind is auto-denied without user interaction | Captured auto-responses for both kinds |
-| AC-016 | FR-007 | Negative | An unknown request method is answered with a method-not-found error rather than ignored | Protocol log showing the error response |
+| AC-014 | FR-007 | Positive | A permission request during a normal turn appears in the GUI and the decision returns to the server | Screenshot of the approval plus the response payload; artifact `docs/evidence/AC-014.md` |
+| AC-015 | FR-007 | Boundary | In plan mode, read and search are auto-allowed and every other kind is auto-denied without user interaction | Captured auto-responses for both kinds; artifact `docs/evidence/AC-015.md` |
+| AC-016 | FR-007 | Negative | An unknown request method is answered with a method-not-found error rather than ignored | Protocol log showing the error response; artifact `docs/evidence/AC-016.md` |
 
 ### Feature 7: Attachment delivery
 
@@ -232,9 +236,9 @@ Any attachment reaches the server as a path reference, and nothing is dropped si
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-017 | FR-008 | Positive | An attachment with a local path is sent as a path reference carrying name, media type, and size | Captured prompt payload |
-| AC-018 | FR-008 | Boundary | A pasted blob is written to disk and then sent as a path reference under a generated name | Captured prompt payload plus the written file |
-| AC-019 | FR-008 | Negative | An attachment with neither path nor data fails the send with a visible error naming the file | Negative test output and the captured error text |
+| AC-017 | FR-008 | Positive | An attachment with a local path is sent as a path reference carrying name, media type, and size | Captured prompt payload; artifact `docs/evidence/AC-017.md` |
+| AC-018 | FR-008 | Boundary | A pasted blob is written to disk and then sent as a path reference under a generated name | Captured prompt payload plus the written file; artifact `docs/evidence/AC-018.md` |
+| AC-019 | FR-008 | Negative | An attachment with neither path nor data fails the send with a visible error naming the file | Negative test output and the captured error text; artifact `docs/evidence/AC-019.md` |
 
 ### Feature 8: Native slash commands
 
@@ -252,8 +256,8 @@ Commands pushed by the server become usable in the composer. Governing requireme
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-020 | FR-009 | Positive | Pushed commands appear in the command picker with their descriptions | Captured update payload plus a picker screenshot |
-| AC-021 | FR-009 | Negative | A pushed name containing whitespace or a path separator is rejected rather than offered | Unit test over the parser |
+| AC-020 | FR-009 | Positive | Pushed commands appear in the command picker with their descriptions | Captured update payload plus a picker screenshot; artifact `docs/evidence/AC-020.md` |
+| AC-021 | FR-009 | Negative | A pushed name containing whitespace or a path separator is rejected rather than offered | Unit test over the parser; artifact `docs/evidence/AC-021.md` |
 
 ### Feature 9: Session controls
 
@@ -271,8 +275,8 @@ Cancel, steer, and compact are reachable from the GUI. Governing requirement: FR
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-022 | FR-010 | Positive | Cancel stops an in-flight turn, steer adds guidance, and compact returns a server acknowledgement | Protocol log for all three calls |
-| AC-023 | FR-010 | Boundary | A compaction call past its control budget is reported and the session stays usable | Induced-timeout log plus a subsequent successful turn |
+| AC-022 | FR-010 | Positive | Cancel stops an in-flight turn, steer adds guidance, and compact returns a server acknowledgement | Protocol log for all three calls; artifact `docs/evidence/AC-022.md` |
+| AC-023 | FR-010 | Boundary | A compaction call past its control budget is reported and the session stays usable | Induced-timeout log plus a subsequent successful turn; artifact `docs/evidence/AC-023.md` |
 
 ### Feature 10: Text-harness generation
 
@@ -290,7 +294,7 @@ The provider supplies the shared text features the other harnesses have. Governi
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-024 | FR-011 | Positive | The provider returns a title, a commit message, a pull-request body, and a branch name through the shared contract | Unit tests over the four generators |
+| AC-024 | FR-011 | Positive | The provider returns a title, a commit message, a pull-request body, and a branch name through the shared contract | Unit tests over the four generators; artifact `docs/evidence/AC-024.md` |
 
 ### Feature 11: Remote-brain bridge mode
 
@@ -308,8 +312,8 @@ The GUI can drive an agent on another machine without shipping a site-specific b
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-025 | FR-012 | Positive | With the environment set, the bridge reaches the host and the GUI completes a session through it | Bridge selftest output plus a completed turn through the bridge |
-| AC-026 | FR-012 | Negative | No host, username, or key material appears in the shipped artifact or the repository tree | String scan of the artifact plus a history scan for the host identifiers |
+| AC-025 | FR-012 | Positive | With the environment set, the bridge reaches the host and the GUI completes a session through it | Bridge selftest output plus a completed turn through the bridge; artifact `docs/evidence/AC-025.md` |
+| AC-026 | FR-012 | Negative | No host, username, or key material appears in the shipped artifact or the repository tree | String scan of the artifact plus a history scan for the host identifiers; artifact `docs/evidence/AC-026.md` |
 
 ### Feature 12: Honest failure surfacing and transport recycling
 
@@ -327,8 +331,8 @@ Failures name their real cause, and a broken transport is replaced rather than r
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-027 | FR-013 | Positive | A ceiling failure produces the ceiling message and a transport failure produces the help banner naming the ACP requirement | Two captured failure messages |
-| AC-028 | FR-013 | Negative | After a failed turn the child is gone and the next turn resumes the same provider session | Process check after failure plus the resumed session id |
+| AC-027 | FR-013 | Positive | A ceiling failure produces the ceiling message and a transport failure produces the help banner naming the ACP requirement | Two captured failure messages; artifact `docs/evidence/AC-027.md` |
+| AC-028 | FR-013 | Negative | After a failed turn the child is gone and the next turn resumes the same provider session | Process check after failure plus the resumed session id; artifact `docs/evidence/AC-028.md` |
 
 ### Feature 13: Setup guide
 
@@ -346,7 +350,7 @@ Both modes are documented end to end for a reader with no chat history. Governin
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-029 | FR-014 | Positive | A reader can install, configure, selftest, and verify both modes without needing missing steps | Walkthrough on a clean machine with the checklist completed |
+| AC-029 | FR-014 | Positive | A reader can install, configure, selftest, and verify both modes without needing missing steps | Walkthrough on a clean machine with the checklist completed; artifact `docs/evidence/AC-029.md` |
 
 ### Feature 14: Budgets, recovery, and security posture
 
@@ -364,15 +368,15 @@ The cross-cutting contracts that make the features above safe to run. Governing 
 
 | ID | Requirement IDs | Type | Observable criterion | Required evidence |
 |---|---|---|---|---|
-| AC-030 | NFR-001 | Boundary | Every call class is issued with its declared budget and a call past it fails naming the call | Timeout constant review plus an induced-timeout run |
-| AC-031 | NFR-001 | Negative | An aborted catalog probe leaves no running child process | Process check immediately after an induced probe overrun |
-| AC-032 | NFR-002 | Positive | A failure path leaves no orphaned child and keeps the session binding for resume | Process listing plus the resumed session id |
-| AC-033 | NFR-002 | Boundary | A session-ended notification drops the live binding so the next turn spawns fresh | Log showing the ended event followed by a new spawn |
-| AC-034 | NFR-003 | Positive | No credential-shaped string appears in the repository tree or the shipped binaries | Secret scan over the tree plus a string scan over the artifacts |
-| AC-035 | NFR-003 | Negative | The remote target comes only from the environment at runtime and no host literal exists in the artifact | Run with the variables unset and observe the configuration error |
-| AC-036 | NFR-004 | Positive | Against a 0.5.4 server every required method succeeds and the turn completes | Live turn against a 0.5.4 server |
-| AC-037 | NFR-004 | Boundary | An unsupported optional method is logged and skipped and the turn still completes | Log of the skipped call plus a completed turn |
-| AC-038 | NFR-005 | Positive | Server stderr appears in the host console log and lifecycle transitions are observable as events | Captured log lines plus the event sequence for one turn |
+| AC-030 | NFR-001 | Boundary | Every call class is issued with its declared budget and a call past it fails naming the call | Timeout constant review plus an induced-timeout run; artifact `docs/evidence/AC-030.md` |
+| AC-031 | NFR-001 | Negative | An aborted catalog probe leaves no running child process | Process check immediately after an induced probe overrun; artifact `docs/evidence/AC-031.md` |
+| AC-032 | NFR-002 | Positive | A failure path leaves no orphaned child and keeps the session binding for resume | Process listing plus the resumed session id; artifact `docs/evidence/AC-032.md` |
+| AC-033 | NFR-002 | Boundary | A session-ended notification drops the live binding so the next turn spawns fresh | Log showing the ended event followed by a new spawn; artifact `docs/evidence/AC-033.md` |
+| AC-034 | NFR-003 | Positive | No credential-shaped string appears in the repository tree or the shipped binaries | Secret scan over the tree plus a string scan over the artifacts; artifact `docs/evidence/AC-034.md` |
+| AC-035 | NFR-003 | Negative | The remote target comes only from the environment at runtime and no host literal exists in the artifact | Run with the variables unset and observe the configuration error; artifact `docs/evidence/AC-035.md` |
+| AC-036 | NFR-004 | Positive | Against a 0.5.4 server every required method succeeds and the turn completes | Live turn against a 0.5.4 server; artifact `docs/evidence/AC-036.md` |
+| AC-037 | NFR-004 | Boundary | An unsupported optional method is logged and skipped and the turn still completes | Log of the skipped call plus a completed turn; artifact `docs/evidence/AC-037.md` |
+| AC-038 | NFR-005 | Positive | Server stderr appears in the host console log and lifecycle transitions are observable as events | Captured log lines plus the event sequence for one turn; artifact `docs/evidence/AC-038.md` |
 
 ## 4. User Flow
 
@@ -453,6 +457,19 @@ Runtime prerequisites: an OpenCrabs build exposing the ACP subcommand (0.5.4 or 
 
 Safe local start and verification: install dependencies, run the renderer and shell in development mode, select the provider, and confirm the picker fills from the catalog. Proposed commands are UNVERIFIED until the builder runs them in the target checkout.
 
+### Bootstrap & First-Run Contract
+
+| Field | Required value |
+|---|---|
+| Clean-checkout command | `git clone https://github.com/adi805/monocode.git ~/src/monocode && cd ~/src/monocode` |
+| Runtime pin | Node v22.23.4 on this host (README requires Node 20 or newer) pinned by `package-lock.json`; Rust stable pinned by `Cargo.lock`, toolchain 1.99.1 installed |
+| Install / dependency step | `npm ci` in the repository root; `mobile/` is a separate Expo project and is not needed for this provider |
+| Start command | `npm run tauri dev` opens the desktop app with Vite on port 1420 and HMR on 1421; the browser-only shell is `npm run dev` |
+| Smoke check | `npm run check:web` runs `vitest run` and `tsc --noEmit` and must exit 0 |
+| Seed or fixture state | None - requires real input: one live ACP server at the configured CLI path; unit runs substitute the stub ACP server under `tests/` |
+| Known environment traps | `npm run tauri dev` needs the system libraries from `bash scripts/install-linux-deps-debian.sh`; this host has no GPU, so windowed verification needs Xvfb; port 1420 must be free |
+| First evidence of running | The `npm run check:web` output with its passing test count and exit code 0, plus a screenshot of the harness rail showing OpenCrabs |
+
 ### Builder Capability Routing Contract
 
 Act on the current request: a PRD alone does not authorize building. At startup, read this PRD and the target instructions once; inspect the host-provided available skill/tool catalog, read matching instructions, and check prerequisites. Record chosen routes, UNAVAILABLE preferences, affected IDs, and evidence limits in PROGRESS.md and the final audit. Names do not authorize installation or host or model changes; use the declared repository-native fallbacks.
@@ -467,6 +484,51 @@ For a new native build, the explicit build request authorizes scoped local work.
 | Package the desktop application | Tauri build toolchain | The fork's release workflow on hosted runners | A local Tauri build with the declared toolchain | Installer artifact plus a matching checksum | Owner approval before publishing a release |
 | Verify picker or approval UI behavior | Visual capture of the running application | A screenshot of the running app | A component-level assertion in a test | Screenshot or test assertion | Local allowed |
 | Land the change in version control | Git write access to the fork | Push a branch to the fork | Prepare a patch and leave it local | Commit identifier plus the remote branch | Owner approval before pushing |
+
+### Threat Model Contract
+
+Yang dilindungi di sini bukan database, melainkan jalur eksekusi: satu adapter yang boleh menjalankan biner apa pun di mesin pengguna dan boleh membuka sesi SSH ke host lain. Penyerang yang relevan adalah isi repositori yang menyisipkan jalur biner atau target remote, dan berkas konfigurasi yang menentukan perintah apa yang dijalankan.
+
+| Field | Required value |
+|---|---|
+| Assets at risk | Jalur biner OpenCrabs yang dieksekusi, sesi SSH ke host remote beserta kunci yang dipakai klien SSH sistem, isi transkrip sesi, dan payload ACP yang membawa potongan berkas pengguna |
+| Trust boundaries | Batas 1: renderer sandbox Tauri ke adapter di sisi Rust. Batas 2: adapter ke proses `opencrabs acp` lokal lewat stdio. Batas 3: bridge executable ke klien SSH sistem dan dari sana ke host remote. Batas 4: katalog model dari server ke pemilih model di UI |
+| Authentication model | Tidak ada autentikasi milik provider; identitas datang dari server ACP. Remote memakai key-based SSH yang sudah dikonfigurasi pengguna, dan provider hanya membaca nama variabel `OPENCRABS_SSH_TARGET` serta `OPENCRABS_REMOTE_BIN` saat runtime (NFR-003) |
+| Authorization model | Izin tindakan datang dari permintaan permission ACP yang dijawab pengguna, dan mode plan membatasi turn menjadi rencana saja sampai pengguna menyetujui (FR-006). Provider tidak menaikkan izin sendiri dan tidak mengeksekusi tool tanpa permintaan |
+| Secrets handling | Tidak ada kredensial di repo, di biner, atau di panduan. Target remote dan jalur biner remote hanya dari environment. Kunci SSH tidak pernah dibaca provider; yang dipakai adalah klien SSH sistem milik pengguna (AC-034, AC-035) |
+| Data in transit & at rest | Transit lokal lewat stdio, remote lewat SSH yang sudah terenkripsi oleh klien sistem. At rest tidak ada: provider tidak menyimpan sesi, transkrip, atau katalog ke disk, karena penyimpanan milik server ACP |
+| Abuse cases | Spoofing server: biner di jalur yang salah menyamar sebagai OpenCrabs, ditahan probe katalog yang membedakan biner hadir dari rute terverifikasi (AC-004). Tampering: isi repo menyisipkan perintah shell di jalur biner, ditahan larangan membangun perintah dari input bebas dan penggunaan argumen terpisah. Repudiation: pengguna menyangkal menyetujui sebuah tool, ditahan permintaan permission yang tampil di transkrip dengan hasil yang tersimpan di sisi server. Information disclosure: hostname dan username remote bocor ke repo atau log, ditahan pemeriksaan pohon berkas dan riwayat (NFR-003). Denial of service: probe yang menggantung meninggalkan proses anak sehingga mesin lambat, ditahan batas waktu per panggilan dan pembunuhan anak di jalur finally (NFR-001, NFR-002). Elevation of privilege: provider menjalankan tool di luar persetujuan karena mode plan dilewati, ditahan jawaban permission yang wajib lewat UI (FR-006) |
+| Residual risk owner | Adi sebagai pemilik fork. Risiko sisa yang diterima secara sadar: siapa pun yang bisa menulis ke environment proses bisa mengarahkan sesi remote ke host lain, dan klien SSH sistem adalah permukaan yang tidak dikendalikan provider |
+
+### SLO & Performance Budget Contract
+
+| Field | Required value |
+|---|---|
+| Service level indicator | Persentase turn yang selesai tanpa zombie child dan tanpa transpor basi, dihitung dari jumlah turn sukses dibagi total turn pada suite integrasi ACP |
+| SLO target | 99% turn selesai bersih, dan nol proses anak yang tertinggal setelah kegagalan atau timeout (NFR-002) |
+| Measurement window | Per suite `npm run check:web` pada tiap perubahan, dan rolling 30 hari untuk tren kegagalan |
+| Error budget policy | Satu turn yang meninggalkan proses anak sudah menghabiskan budget: perubahan berikutnya wajib menambah tes regresi untuk jalur itu sebelum pekerjaan fitur dilanjutkan |
+| Latency budget (p95) | Handshake 120 s, permintaan sesi 45 s, panggilan kontrol 15 s, dan plafon probe katalog 45 s, semuanya diukur dari stub ACP server dan dari server nyata saat tersedia (NFR-001, AC-030) |
+| Load expectation | Satu pengguna per aplikasi desktop dengan satu sesi aktif per thread, katalog sekitar 20 model, dan probe katalog dijalankan sekali per pembukaan pemilih, bukan per turn |
+| Alert threshold | Probe melewati plafon 45 s, atau handshake melewati 120 s, atau ada satu proses anak tersisa setelah suite selesai |
+| Escalation owner | Adi sebagai pemilik adapter; kegagalan yang berasal dari biner OpenCrabs dilaporkan ke repo runtime, bukan ditambal di sisi klien |
+
+### Integration Map Contract
+
+| Module | Public interface | Calls into | Called by | Data owned | Failure mode | Contract test |
+|---|---|---|---|---|---|---|
+| Renderer (rail, composer, picker) | Antarmuka provider MonoCode yang sudah ada, event `session-bound` dan `catalog-updated` | Harness adapter | Shell Tauri | Tidak memiliki data persisten | Adapter gagal memuat sehingga rail tampil kosong tanpa penjelasan | `npm run check:web` dengan tes komponen picker |
+| Harness adapter | `registerProvider()`, `probeAvailability()`, `startSession()` | Resolver biner, probe katalog, klien ACP | Renderer | Binding sesi per thread di memori | Probe menggantung membuat composer terkunci; dijaga batas waktu dan pembunuhan anak | Tes `AC-030` dan `AC-031` |
+| Binary resolver | `resolveBinaryPath()` membaca jalur dari konfigurasi host | Filesystem | Harness adapter | Tidak memiliki data | Biner tidak ada tetapi dianggap ada sehingga turn gagal di tengah | `AC-002` dan `AC-004` |
+| ACP client | `request()` dan `notify()` atas JSON-RPC newline-delimited lewat stdio | `opencrabs acp` sebagai proses anak | Harness adapter | Antrean pesan di memori | Server mati di tengah turn sehingga transpor basi; dijaga recycle dan resume sesi | `AC-032` dan `AC-033` |
+| Bridge executable | `pump()` dengan argumen target dan jalur biner remote dari environment | Klien SSH sistem | ACP client | Tidak memiliki data | SSH gagal atau host mati sehingga rute remote tidak bisa dipakai; selftest gagal dengan pesan jelas | `AC-025` selftest bridge |
+| Catalog probe | `probeCatalog(ceilingMs)` | ACP client | Harness adapter | Hasil katalog di memori selama sesi | Metode opsional tidak didukung sehingga katalog kosong dan turn tetap harus jalan | `AC-036` dan `AC-037` |
+
+
+
+
+
+
 
 ## 6. Data Models
 
@@ -518,6 +580,21 @@ No new token is introduced. The builder must reuse the existing theme variables 
 | Error | Failures render in the existing session error banner; the ceiling and transport messages are distinct strings (AC-027) |
 | Disabled | The rail entry is disabled with the install hint when the executable is absent (AC-002); the composer is disabled before a session binds |
 
+### Design System & UX Contract
+
+Provider ini menumpang sistem desain MonoCode yang sudah ada, jadi kontraknya adalah larangan membuat token atau komponen baru, bukan penambahan permukaan.
+
+| Field | Required value |
+|---|---|
+| Design tokens source | Variabel tema MonoCode yang sudah ada untuk Primary, Background, Surface, Text, dan Danger di mode terang dan gelap. Tidak ada token baru; bukti penerimaannya adalah entri rail dan baris picker tampil menyatu dan tetap terbaca di kedua tema (AC-001) |
+| Component inventory | Satu entri rail dengan ikon OpenCrabs, baris picker di dalam overlay pemilih yang sudah ada, banner galat sesi, permukaan approval permission, dan composer yang sudah ada tanpa komponen baru |
+| UI states | Loading saat probe ketersediaan dan probe katalog berjalan dengan composer nonaktif sampai sesi terikat; empty saat katalog kosong sehingga baris default tetap tampil dan pemilih tetap bisa dibuka; error di banner sesi dengan pesan ceiling dan pesan transport sebagai dua string berbeda (AC-027); success saat sesi terikat dan turn pertama selesai; partial atau degraded saat metode opsional server tidak didukung sehingga turn tetap jalan lewat jalur klien (NFR-004) |
+| Accessibility target | WCAG 2.2 AA mengikuti standar MonoCode yang sudah ada: navigasi keyboard pada rail dan picker, fokus terlihat, kontras teks lolos, dan status tidak hanya dibedakan warna. Tidak ada penurunan standar karena komponennya dipakai ulang |
+| Responsive breakpoints | Mengikuti breakpoint MonoCode: rail menyusut di lebar sempit dan picker menjadi layar penuh di bawah 768px. Provider tidak menambah breakpoint sendiri |
+| Content & copy rules | Pesan galat menyebut penyebab dan langkah berikutnya, dan pesan ceiling dibedakan dari pesan transport (AC-027). Nama model dan mode ditampilkan persis seperti yang dilaporkan server, tanpa normalisasi yang menyesatkan |
+| Design owner | Adi, dengan bukti tangkapan layar rail dan picker di kedua tema sebagai syarat merge |
+
+
 ## 8. API Spec
 
 There is no HTTP API in this product. The interface is Agent Client Protocol over stdio: newline-delimited JSON-RPC between the MonoCode client and the server process, local or bridged. The table below is the method contract the adapter relies on; it is the interface a builder must satisfy and a reviewer must check.
@@ -568,6 +645,22 @@ There is no HTTP API in this product. The interface is Agent Client Protocol ove
 | src-tauri/src/harness.rs | Native binary resolution including the OpenCrabs candidate list and accepted stems | Shell |
 | docs/WINDOWS-SETUP.md | The end-to-end setup guide for both modes | Documentation |
 
+### Maintainability Contract
+
+| Field | Required value |
+|---|---|
+| Existing assets to reuse | Shell Tauri dan renderer MonoCode dipakai apa adanya. Yang ditambah hanya `src/integrations/harness/providers/opencrabs/` berisi `opencrabsProtocol.ts` dan adapter, satu entri rail, satu ikon, dan baris di picker. Tidak ada sistem desain, transport, atau penyimpanan baru |
+| Module boundaries | Adapter ACP tidak boleh menyentuh renderer langsung dan hanya bicara lewat antarmuka provider yang sudah ada. Bridge executable tetap pompa tipis dan tidak mengandung logika sesi |
+| Dependency direction | Renderer menuju antarmuka provider menuju adapter menuju klien ACP menuju proses. Tidak ada panah balik, dan tidak ada modul renderer yang mengimpor detail protokol |
+| Naming & file layout | Seluruh berkas provider berada di bawah `src/integrations/harness/providers/opencrabs/`, nama berkas mengikuti konvensi camelCase yang sudah dipakai folder itu, dan tes diletakkan di sebelah berkas yang diuji |
+| Max file / function size | Berkas maksimal 400 baris dan fungsi maksimal 50 baris mengikuti ukuran modul provider lain di repo yang sama. Batas ini tidak boleh dicapai dengan membuang validasi, penanganan galat, atau pembersihan proses anak |
+| Test strategy | `npm run check:web` menjalankan `vitest run` dan `tsc --noEmit` dan wajib exit 0. Stub ACP server di `tests/` dipakai untuk handshake, lifecycle, dan jalur timeout, sementara rute nyata dicatat sebagai UNVERIFIED kalau tidak ada server yang bisa dijalankan. Setiap AC punya bukti di `PROGRESS.md` atau berkas tes yang menyebut ID-nya |
+| Comment & doc policy | Komentar menjelaskan alasan protokol, misalnya kenapa satu metode opsional dilewati, bukan mengulang kode. Panduan setup ditulis di repo dan tidak boleh memuat hostname, username, atau kredensial (NFR-003) |
+| Ownership | Adi sebagai pemilik fork dan adapter; PR dari kontributor ditinjau sebelum merge ke branch utama |
+| Dead code policy | Adapter yang menargetkan metode server yang sudah tidak ada dihapus setelah versi minimum naik, tidak disimpan sebagai cabang mati. Stub tes yang tidak lagi mewakili protokol ikut dihapus |
+| Explicit non-goals | Tidak ada penyimpanan sesi di sisi klien, tidak ada katalog yang di-cache ke disk, tidak ada scheduler, tidak ada analytics, tidak ada dukungan Windows native di luar Tauri, dan tidak ada pergantian protokol di luar ACP |
+
+
 ## 10. Milestones
 
 | # | Milestone | Done When | Status |
@@ -616,4 +709,82 @@ Pause only for a blocking decision, material scope change, or a genuine new auth
 | Side effects and cleanup | None. Generation wrote three documents and executed no application code. |
 | Readiness and limitations | The specification is complete and traceable; every runtime claim still needs a build and a real server to become VERIFIED |
 | One next action | No action - wait for owner approval, then give PRD.md to a fresh builder with the instruction to build it until done |
+
+### Rollback & Release Safety Contract
+
+| Field | Required value |
+|---|---|
+| Deploy strategy | Aplikasi desktop Tauri dibangun sebagai installer per platform dan dibagikan lewat rilis GitHub fork. Tidak ada server yang dideploy, jadi tidak ada rilis bertahap dan tidak ada auto-update paksa |
+| Release mechanism | Tag pada fork, build Tauri di runner hosted, artefak installer plus checksum diunggah ke rilis. Rilis hanya keluar kalau `npm run check:web` exit 0 pada commit yang sama |
+| Rollback command | `git revert <commit> && git push origin HEAD` untuk perubahan yang sudah masuk, dan pemasangan ulang installer versi sebelumnya dari rilis GitHub untuk pengguna |
+| Rollback time target | Under 10 minutes untuk revert di repo dan under 5 minutes untuk memasang ulang installer sebelumnya |
+| Database migration strategy | N/A — provider tidak memiliki database klien. Satu-satunya keadaan tersimpan ada di server ACP, dan perubahan bentuk payload ditangani dengan membaca dua bentuk selama satu versi sebelum bentuk lama dilepas |
+| Backup / restore point | Tidak ada data klien yang perlu dicadangkan. Titik pemulihan efektif adalah commit tag rilis sebelumnya beserta artefak installernya |
+| Kill switch | Entri rail bisa dimatikan lewat flag build, dan pemilihan provider kembali ke provider sebelumnya tanpa menyentuh kode adapter. Untuk rute remote, menghapus variabel environment target sudah cukup mematikan jalur itu |
+| Post-rollback verification | Setelah rollback: `npm run check:web` exit 0, aplikasi start, rail menampilkan provider, dan satu turn ke stub ACP server selesai tanpa proses anak tersisa |
+| Release owner | Adi, satu-satunya yang memegang tag dan akses unggah rilis |
+
+### Backup & Restore Drill Contract
+
+Provider ini sengaja tidak menyimpan apa pun: sesi, transkrip, dan katalog semuanya milik server ACP. Karena itu tidak ada yang bisa direstore di sisi klien, dan tabel ini menjelaskan batas itu supaya tidak dikira sudah tercadangkan.
+
+| Field | Required value |
+|---|---|
+| Backup scope | N/A — tidak ada penyimpanan klien. Sesi dan transkrip tinggal di server ACP, dan retensinya kebijakan server, bukan produk ini |
+| Backup destination | N/A — provider tidak menulis cadangan karena tidak memiliki data untuk dicadangkan |
+| Backup frequency | N/A — tidak ada jadwal cadangan di sisi klien |
+| Backup retention | N/A — retensi mengikuti kebijakan server ACP |
+| Restore command | N/A — pemulihan berarti memasang ulang aplikasi dan membuka sesi lama lewat server, bukan memulihkan berkas klien |
+| Restore time target | N/A — tidak ada sasaran waktu restore yang bisa dijanjikan produk untuk data yang bukan miliknya |
+| Restore test cadence | N/A — tidak ada drill berkala karena tidak ada data klien |
+| Last verified restore | N/A — belum ada drill dan tidak akan ada; bukti yang relevan adalah sesi bisa di-resume setelah transpor didaur ulang (AC-032) |
+| Restore verification | N/A — yang bisa diperiksa hanya resume sesi dan `npm run check:web` exit 0, bukan integritas cadangan |
+| Restore owner | N/A — pemilik data adalah server ACP, bukan klien |
+
+### Commercial Readiness Contract
+
+| Field | Required value |
+|---|---|
+| Pricing model | Rp 0 per pengguna per bulan, gratis sebagai bagian dari fork yang mengikuti lisensi upstream; tidak ada paket berbayar dan tidak ada batas fitur yang dijual |
+| Unit economics | Biaya langsung 0 rupiah karena aplikasi berjalan di mesin pengguna dan tidak ada server yang dioperasikan. Biaya nyata hanya menit CI fork dan waktu meninjau PR |
+| Legal entity & jurisdiction | N/A — tidak ada penjualan; proyek dijalankan perorangan di Indonesia dan distribusi gratis tidak melahirkan kontrak dagang |
+| Customer terms & privacy | N/A — tidak ada pelanggan berbayar sehingga tidak ada terms of service maupun privacy policy milik provider; data sesi tinggal di server yang dipilih pengguna sendiri |
+| License | N/A — repo fork privat, lisensi mengikuti upstream |
+| Billing mechanism | N/A — tidak ada penagihan dan tidak ada invoice karena tidak ada transaksi |
+| Refund & cancellation policy | N/A — tidak ada pembayaran yang bisa dikembalikan |
+| Support channel | GitHub Issues di repo fork untuk bug adapter, dan Telegram untuk pertanyaan pemakaian yang tidak layak jadi issue |
+| Support response target | Bug yang membuat provider tidak bisa dipilih atau sesi tidak bisa dimulai dijawab dalam 3 hari kerja |
+| Commercial owner | Adi sebagai pemilik fork dan penanggung jawab biaya CI |
+
+### Go-to-Market Contract
+
+| Field | Required value |
+|---|---|
+| Acquisition channel | Community OpenCrabs di Telegram dan Discord, ditambah catatan rilis di repo fork dan satu artikel di blog toolkuy |
+| Positioning statement | Satu baris: pakai OpenCrabs dari dalam MonoCode tanpa keluar aplikasi, lokal atau lewat host yang selalu menyala |
+| Target audience | Pengguna MonoCode yang sudah memiliki minimal 1 biner OpenCrabs versi 0.5.4 atau lebih baru dengan subcommand ACP yang bisa dipanggil, plus pengguna OpenCrabs yang ingin antarmuka desktop. Syarat masuknya 1 biner yang bisa dipanggil, sedangkan jumlah orangnya belum diukur |
+| Acquisition cost or budget | Rp 0 untuk iklan, ditambah sekitar 4 jam per minggu untuk menulis panduan setup dan menjawab issue |
+| Launch success metric | Jumlah users yang menyelesaikan minimal 1 turn pada 30 hari pertama, target awal 25 users dan nol laporan provider tidak muncul di rail |
+| Launch owner | Adi sebagai pemilik repo dan panduan setup |
+
+### Handover & Ownership Transfer Contract
+
+| Field | Required value |
+|---|---|
+| Handover artifacts | Repo `adi805/monocode` beserta fork provider, folder `src/integrations/harness/providers/opencrabs/`, stub ACP server di `tests/`, panduan setup tanpa kredensial, dan `PROGRESS.md` berisi rute yang sudah dan belum terverifikasi |
+| Access transfer | Lewat owner invite ke repo GitHub, lalu key rotation: token CI dicabut dan dibuat ulang, dan secrets repo dipindahkan ke penerima. Tidak ada token atau kunci yang dikirim lewat chat |
+| Operations runbook | `docs/RUNBOOK.md` di repo memuat cara menjalankan `npm run check:web`, cara memakai Xvfb untuk verifikasi berjendela, cara membaca log stderr server ACP, dan cara memotong rilis Tauri |
+| Receiving owner | Adi untuk seluruh sistem; kalau ada penerus, satu kontributor yang sudah pernah membuat satu PR adapter dengan `npm run check:web` hijau |
+| Handover acceptance criteria | Penerima menjalankan sendiri `npm run check:web` sampai exit 0, memilih provider di rail, menyelesaikan satu turn lewat stub ACP, dan memotong satu build Tauri percobaan; ditutup sign-off tertulis dari penerima dan Adi |
+| Post-handover support window | 30 hari pendampingan setelah serah terima, dengan satu sesi review tiap 14 hari |
+
+
+
+
+
+
+
+
+
+
 
